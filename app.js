@@ -90,14 +90,14 @@ function initMap() {
         center: DEFAULT_LOCATION,
         zoom: 8,
         minZoom: 5,
-        maxZoom: 25,
+        maxZoom: 22,
         zoomControl: true,
         preferCanvas: true
     });
     
     osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
-        maxZoom: 25
+        maxZoom: 19
     });
     
     satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
