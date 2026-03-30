@@ -129,6 +129,12 @@ function updateDisplayCoordsFromCenter() {
 }
 
 function onZoomEnd() {
+    if (map.getZoom() > 22) {
+        map.setZoom(22);
+    }
+    if (map.getZoom() < 5) {
+        map.setZoom(5);
+    }
     loadBoundaries();
 }
 
