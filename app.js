@@ -566,8 +566,8 @@ function updatePosition(lat, lon, accuracy) {
     }
     
     if (followMode) {
-        document.getElementById('lat').textContent = formatDMS(lat, 'lat');
-        document.getElementById('lon').textContent = formatDMS(lon, 'lon');
+        document.getElementById('lat').textContent = lat.toFixed(7);
+        document.getElementById('lon').textContent = lon.toFixed(7);
         document.getElementById('accuracy').textContent = accuracy.toFixed(2) + ' m';
         positionMarker.setLatLng([lat, lon]);
         map.panTo([lat, lon], { animate: true });
