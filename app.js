@@ -559,8 +559,9 @@ function updatePosition(lat, lon, accuracy) {
     if (!positionMarker) {
         const gnssIcon = L.divIcon({
             className: 'gnss-marker',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+            html: '<div class="center-dot"></div>'
         });
         positionMarker = L.marker([lat, lon], { icon: gnssIcon }).addTo(map);
     }
