@@ -381,42 +381,49 @@ html, body {
     width: 40px;
     height: 40px;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.gnss-marker::before,
-.gnss-marker::after {
-    content: "";
+.gnss-marker .line-top,
+.gnss-marker .line-bottom,
+.gnss-marker .line-left,
+.gnss-marker .line-right {
     position: absolute;
     background: #4CAF50;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.8);
 }
 
-.gnss-marker::before {
+.gnss-marker .line-top,
+.gnss-marker .line-bottom {
     width: 2px;
-    height: 100%;
     left: 50%;
     transform: translateX(-50%);
 }
 
-.gnss-marker::after {
-    width: 100%;
+.gnss-marker .line-left,
+.gnss-marker .line-right {
     height: 2px;
     top: 50%;
     transform: translateY(-50%);
 }
 
-.gnss-marker .center-hole {
-    width: 10px;
-    height: 10px;
-    background: transparent;
-    border: 2px solid #4CAF50;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 1;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+.gnss-marker .line-top {
+    top: 0;
+    height: 40%;
+}
+
+.gnss-marker .line-bottom {
+    bottom: 0;
+    height: 40%;
+}
+
+.gnss-marker .line-left {
+    left: 0;
+    width: 40%;
+}
+
+.gnss-marker .line-right {
+    right: 0;
+    width: 40%;
 }
 
 @keyframes pulse {

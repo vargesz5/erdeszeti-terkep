@@ -571,7 +571,7 @@ function updatePosition(lat, lon, accuracy) {
             className: 'gnss-marker',
             iconSize: [40, 40],
             iconAnchor: [20, 20],
-            html: '<div class="center-hole"></div>'
+            html: '<div class="line-top"></div><div class="line-bottom"></div><div class="line-left"></div><div class="line-right"></div>'
         });
         positionMarker = L.marker([lat, lon], { icon: gnssIcon }).addTo(map);
     }
