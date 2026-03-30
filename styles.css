@@ -408,14 +408,15 @@ html, body {
     transform: translateY(-50%);
 }
 
-.gnss-marker .center-dot {
-    width: 8px;
-    height: 8px;
-    background: #4CAF50;
+.gnss-marker .center-hole {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+    border: 2px solid #4CAF50;
     border-radius: 50%;
-    box-shadow: 0 0 15px rgba(76, 175, 80, 0.8);
+    position: absolute;
     z-index: 1;
-    position: relative;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
 }
 
 @keyframes pulse {
