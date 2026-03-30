@@ -35,6 +35,10 @@ function init() {
     satelliteLayer.addTo(map);
     isSatelliteMode = true;
     
+    if (followMode) {
+        map.dragging.disable();
+    }
+    
     loadAllLayers();
     loadAllBoundaries();
     
@@ -99,16 +103,25 @@ function initMap() {
     
     osmLayer.addTo(map);
     
-    const defaultIcon = L.divIcon({
-        className: 'gnss-marker',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-    });
-    
-    L.marker(DEFAULT_LOCATION, { icon: defaultIcon }).addTo(map);
-    
     map.on('zoomend', onZoomEnd);
     map.on('moveend', onMapMove);
+    map.on('drag', onMapDrag);
+}
+
+function onMapDrag() {
+    if (!followMode && positionMarker) {
+        positionMarker.setLatLng(map.getCenter());
+        updateDisplayCoordsFromCenter();
+    }
+}
+
+function updateDisplayCoordsFromCenter() {
+    if (!followMode && map) {
+        const center = map.getCenter();
+        document.getElementById('lat').textContent = center.lat.toFixed(7);
+        document.getElementById('lon').textContent = center.lng.toFixed(7);
+        document.getElementById('accuracy').textContent = '-- m';
+    }
 }
 
 function onZoomEnd() {
@@ -188,7 +201,25 @@ function initControls() {
         const btn = document.getElementById('btn-follow');
         followMode = !followMode;
         btn.classList.toggle('active', followMode);
-        showToast(followMode ? 'Követés bekapcsolva' : 'Követés kikapcsolva');
+        
+        if (followMode) {
+            map.dragging.disable();
+            if (currentPosition && positionMarker) {
+                positionMarker.setLatLng([currentPosition.lat, currentPosition.lon]);
+                map.panTo([currentPosition.lat, currentPosition.lon]);
+                document.getElementById('lat').textContent = currentPosition.lat.toFixed(7);
+                document.getElementById('lon').textContent = currentPosition.lon.toFixed(7);
+                document.getElementById('accuracy').textContent = currentPosition.accuracy.toFixed(2) + ' m';
+            }
+            showToast('Követés bekapcsolva');
+        } else {
+            map.dragging.enable();
+            if (positionMarker) {
+                positionMarker.setLatLng(map.getCenter());
+                updateDisplayCoordsFromCenter();
+            }
+            showToast('Követés kikapcsolva - szabadon navigálhatsz');
+        }
     });
     
     document.getElementById('btn-close-layers').addEventListener('click', () => {
@@ -525,13 +556,7 @@ async function reverseGeocode(lat, lon) {
 function updatePosition(lat, lon, accuracy) {
     currentPosition = { lat, lon, accuracy };
     
-    document.getElementById('lat').textContent = formatDMS(lat, 'lat');
-    document.getElementById('lon').textContent = formatDMS(lon, 'lon');
-    document.getElementById('accuracy').textContent = accuracy.toFixed(2) + ' m';
-    
-    if (positionMarker) {
-        positionMarker.setLatLng([lat, lon]);
-    } else {
+    if (!positionMarker) {
         const gnssIcon = L.divIcon({
             className: 'gnss-marker',
             iconSize: [30, 30],
@@ -541,6 +566,10 @@ function updatePosition(lat, lon, accuracy) {
     }
     
     if (followMode) {
+        document.getElementById('lat').textContent = formatDMS(lat, 'lat');
+        document.getElementById('lon').textContent = formatDMS(lon, 'lon');
+        document.getElementById('accuracy').textContent = accuracy.toFixed(2) + ' m';
+        positionMarker.setLatLng([lat, lon]);
         map.panTo([lat, lon], { animate: true });
     }
     
