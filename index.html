@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1b5e20">
+    <meta name="description" content="Erdészeti térkép alkalmazás GNSS pozícióval">
+    <title>Erdészeti Térkép</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div id="info-panel">
+        <div id="city-name" class="city-name">--</div>
+        <div class="gps-info">
+            <div class="info-row">
+                <span class="label">Szélesség:</span>
+                <span id="lat">--°--'--"</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Hosszúság:</span>
+                <span id="lon">--°--'--"</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Pontosság:</span>
+                <span id="accuracy">-- m</span>
+            </div>
+            <div id="hrsz-display" class="hrsz-badge">
+                <span class="label">Erdőrészlet:</span>
+                <span id="current-hrsz">--</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button id="btn-layers" class="control-btn" title="Térkép rétegek">
+            <span class="icon">🗺️</span>
+        </button>
+        <button id="btn-gnss" class="control-btn" title="GNSS állapot">
+            <span class="icon">📡</span>
+        </button>
+        <button id="btn-follow" class="control-btn active" title="Követés">
+            <span class="icon">👁️</span>
+        </button>
+    </div>
+
+    <div id="layer-panel" class="panel hidden">
+        <h3>Térkép nézet</h3>
+        
+        <label class="radio-option">
+            <input type="radio" name="baselayer" value="osm">
+            <span>🗺️ Utcakép</span>
+        </label>
+        <label class="radio-option">
+            <input type="radio" name="baselayer" value="satellite" checked>
+            <span>🛰️ Műhold kép</span>
+        </label>
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #444;">
+            <p style="font-size: 13px; color: #aaa; margin-bottom: 10px;">Rétegek automatikusan betöltve:</p>
+            <p style="font-size: 12px; color: #888;">🌲 Erdőrészletek<br>📍 Erdőtagok<br>🏠 Helyrajzi számok</p>
+        </div>
+        
+        <button id="btn-close-layers" class="panel-close">✕</button>
+    </div>
+
+    <div id="gnss-panel" class="panel hidden">
+        <h3>GNSS beállítás</h3>
+        <div id="gnss-status" class="status disconnected">
+            <span class="status-icon">○</span>
+            <span class="status-text">Nincs GPS jel</span>
+        </div>
+        
+        <div style="margin: 15px 0; padding: 15px; background: rgba(76, 175, 80, 0.15); border-radius: 10px; border-left: 4px solid #4CAF50;">
+            <p style="font-size: 13px; color: #4CAF50; font-weight: bold; margin-bottom: 10px;">
+                Beállítás a GNSS Master app-ban:
+            </p>
+            <ol style="font-size: 12px; color: #ccc; padding-left: 18px; line-height: 2;">
+                <li>GNSS Master → Status</li>
+                <li>Kapcsold be a <strong>Mock Location</strong> switch-et</li>
+            </ol>
+        </div>
+        
+        <div id="gps-details" style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+            <p style="font-size: 12px; color: #888; margin-bottom: 8px;">GPS állapot:</p>
+            <div id="gps-info-text" style="font-size: 12px; color: #aaa; font-family: monospace;">
+                Várakozás GPS jelre...
+            </div>
+        </div>
+        
+        <button id="btn-close-gnss" class="panel-close">✕</button>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>Betöltés...</span>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
