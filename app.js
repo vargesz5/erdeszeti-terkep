@@ -89,16 +89,20 @@ function initMap() {
     map = L.map('map', {
         center: DEFAULT_LOCATION,
         zoom: 8,
+        minZoom: 5,
+        maxZoom: 25,
         zoomControl: true,
         preferCanvas: true
     });
     
     osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+        attribution: '© OpenStreetMap',
+        maxZoom: 25
     });
     
     satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '© ESRI'
+        attribution: '© ESRI',
+        maxZoom: 22
     });
     
     osmLayer.addTo(map);
