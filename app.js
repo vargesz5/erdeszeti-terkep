@@ -28,54 +28,36 @@ const BOUNDARY_COLORS = {
     city: '#00BCD4'
 };
 
-let markerDB = null;
+function loadMarkersFromStorage() {
+    try {
+        const data = localStorage.getItem('erdeszeti_markers');
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        return [];
+    }
+}
 
-function initMarkerDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('EdeszetiMarkerDB', 1);
-        
-        request.onerror = () => reject(request.error);
-        
-        request.onsuccess = () => {
-            markerDB = request.result;
-            resolve(markerDB);
-        };
-        
-        request.onupgradeneeded = (event) => {
-            const database = event.target.result;
-            if (!database.objectStoreNames.contains('markers')) {
-                database.createObjectStore('markers', { keyPath: 'id', autoIncrement: true });
-            }
-        };
-    });
+function saveMarkersToStorage() {
+    try {
+        localStorage.setItem('erdeszeti_markers', JSON.stringify(savedMarkers));
+    } catch (e) {
+        console.warn('Failed to save markers');
+    }
 }
 
 function addMarker(lat, lng, name) {
-    return new Promise((resolve, reject) => {
-        if (!markerDB) {
-            reject(new Error('DB not ready'));
-            return;
-        }
-        
-        const transaction = markerDB.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        
-        const marker = {
-            lat: lat,
-            lng: lng,
-            name: name || `Pont ${savedMarkers.length + 1}`,
-            createdAt: new Date().toISOString()
-        };
-        
-        const request = store.add(marker);
-        request.onsuccess = () => {
-            marker.id = request.result;
-            savedMarkers.push(marker);
-            addMarkerToMap(marker);
-            resolve(marker);
-        };
-        request.onerror = () => reject(request.error);
-    });
+    const marker = {
+        id: Date.now(),
+        lat: lat,
+        lng: lng,
+        name: name || `Pont ${savedMarkers.length + 1}`,
+        createdAt: new Date().toISOString()
+    };
+    
+    savedMarkers.push(marker);
+    saveMarkersToStorage();
+    addMarkerToMap(marker);
+    return marker;
 }
 
 function addMarkerToMap(marker) {
@@ -102,47 +84,18 @@ function addMarkerToMap(marker) {
 }
 
 function loadSavedMarkers() {
-    return new Promise((resolve, reject) => {
-        if (!markerDB) {
-            reject(new Error('DB not ready'));
-            return;
-        }
-        
-        const transaction = markerDB.transaction(['markers'], 'readonly');
-        const store = transaction.objectStore('markers');
-        const request = store.getAll();
-        
-        request.onsuccess = () => {
-            savedMarkers = request.result || [];
-            savedMarkers.forEach(marker => addMarkerToMap(marker));
-            resolve(savedMarkers);
-        };
-        request.onerror = () => reject(request.error);
-    });
+    savedMarkers = loadMarkersFromStorage();
+    savedMarkers.forEach(marker => addMarkerToMap(marker));
 }
 
 function deleteMarker(id) {
-    return new Promise((resolve, reject) => {
-        if (!markerDB) {
-            reject(new Error('DB not ready'));
-            return;
-        }
-        
-        const transaction = markerDB.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        const request = store.delete(id);
-        
-        request.onsuccess = () => {
-            savedMarkers = savedMarkers.filter(m => m.id !== id);
-            if (savedMarkersLayer) {
-                map.removeLayer(savedMarkersLayer);
-                savedMarkersLayer = null;
-                savedMarkers.forEach(marker => addMarkerToMap(marker));
-            }
-            resolve();
-        };
-        request.onerror = () => reject(request.error);
-    });
+    savedMarkers = savedMarkers.filter(m => m.id !== id);
+    saveMarkersToStorage();
+    if (savedMarkersLayer) {
+        map.removeLayer(savedMarkersLayer);
+        savedMarkersLayer = null;
+        savedMarkers.forEach(marker => addMarkerToMap(marker));
+    }
 }
 window.deleteMarker = deleteMarker;
 
@@ -221,12 +174,7 @@ async function init() {
     
     document.querySelector('input[name="baselayer"][value="satellite"]').checked = true;
     
-    try {
-        await initMarkerDB();
-        await loadSavedMarkers();
-    } catch (err) {
-        console.warn('Marker DB error:', err);
-    }
+    loadSavedMarkers();
     
     showToast('Alkalmazás betöltve');
 }
