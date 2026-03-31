@@ -32,7 +32,7 @@ let markerDB = null;
 
 function initMarkerDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('Erd Terkep Markers', 1);
+        const request = indexedDB.open('EdeszetiMarkerDB', 1);
         
         request.onerror = () => reject(request.error);
         
@@ -42,46 +42,39 @@ function initMarkerDB() {
         };
         
         request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains('markers')) {
-                db.createObjectStore('markers', { keyPath: 'id' });
+            const database = event.target.result;
+            if (!database.objectStoreNames.contains('markers')) {
+                database.createObjectStore('markers', { keyPath: 'id', autoIncrement: true });
             }
         };
     });
 }
 
-async function addMarker(lat, lng, name) {
-    const count = await countMarkers();
-    const marker = {
-        id: Date.now(),
-        lat: lat,
-        lng: lng,
-        name: name || `Pont ${count + 1}`,
-        createdAt: new Date().toISOString()
-    };
-    
+function addMarker(lat, lng, name) {
     return new Promise((resolve, reject) => {
+        if (!markerDB) {
+            reject(new Error('DB not ready'));
+            return;
+        }
+        
         const transaction = markerDB.transaction(['markers'], 'readwrite');
         const store = transaction.objectStore('markers');
-        const request = store.add(marker);
         
+        const marker = {
+            lat: lat,
+            lng: lng,
+            name: name || `Pont ${savedMarkers.length + 1}`,
+            createdAt: new Date().toISOString()
+        };
+        
+        const request = store.add(marker);
         request.onsuccess = () => {
+            marker.id = request.result;
             savedMarkers.push(marker);
             addMarkerToMap(marker);
             resolve(marker);
         };
-        
         request.onerror = () => reject(request.error);
-    });
-}
-
-function countMarkers() {
-    return new Promise((resolve) => {
-        const transaction = markerDB.transaction(['markers'], 'readonly');
-        const store = transaction.objectStore('markers');
-        const request = store.count();
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => resolve(0);
     });
 }
 
@@ -108,8 +101,13 @@ function addMarkerToMap(marker) {
         `);
 }
 
-async function loadSavedMarkers() {
+function loadSavedMarkers() {
     return new Promise((resolve, reject) => {
+        if (!markerDB) {
+            reject(new Error('DB not ready'));
+            return;
+        }
+        
         const transaction = markerDB.transaction(['markers'], 'readonly');
         const store = transaction.objectStore('markers');
         const request = store.getAll();
@@ -117,37 +115,36 @@ async function loadSavedMarkers() {
         request.onsuccess = () => {
             savedMarkers = request.result || [];
             savedMarkers.forEach(marker => addMarkerToMap(marker));
-            resolve();
+            resolve(savedMarkers);
         };
-        
         request.onerror = () => reject(request.error);
     });
 }
 
-async function deleteMarker(id) {
+function deleteMarker(id) {
     return new Promise((resolve, reject) => {
+        if (!markerDB) {
+            reject(new Error('DB not ready'));
+            return;
+        }
+        
         const transaction = markerDB.transaction(['markers'], 'readwrite');
         const store = transaction.objectStore('markers');
         const request = store.delete(id);
         
         request.onsuccess = () => {
             savedMarkers = savedMarkers.filter(m => m.id !== id);
-            refreshMarkerLayer();
+            if (savedMarkersLayer) {
+                map.removeLayer(savedMarkersLayer);
+                savedMarkersLayer = null;
+                savedMarkers.forEach(marker => addMarkerToMap(marker));
+            }
             resolve();
         };
-        
         request.onerror = () => reject(request.error);
     });
 }
 window.deleteMarker = deleteMarker;
-
-function refreshMarkerLayer() {
-    if (savedMarkersLayer) {
-        map.removeLayer(savedMarkersLayer);
-        savedMarkersLayer = null;
-    }
-    savedMarkers.forEach(marker => addMarkerToMap(marker));
-}
 
 function exportMarkers() {
     if (savedMarkers.length === 0) {
@@ -206,8 +203,6 @@ function importMarkers() {
 }
 
 async function init() {
-    await initMarkerDB();
-    
     initMap();
     initControls();
     
@@ -226,7 +221,12 @@ async function init() {
     
     document.querySelector('input[name="baselayer"][value="satellite"]').checked = true;
     
-    await loadSavedMarkers();
+    try {
+        await initMarkerDB();
+        await loadSavedMarkers();
+    } catch (err) {
+        console.warn('Marker DB error:', err);
+    }
     
     showToast('Alkalmazás betöltve');
 }
@@ -376,6 +376,10 @@ function getBoundaryStyle(type) {
 }
 
 function initControls() {
+    document.getElementById('btn-layers').addEventListener('click', () => {
+        togglePanel('layer-panel');
+    });
+    
     document.getElementById('btn-gnss').addEventListener('click', () => {
         togglePanel('gnss-panel');
     });
@@ -403,6 +407,10 @@ function initControls() {
             }
             showToast('Követés kikapcsolva - szabadon navigálhatsz');
         }
+    });
+    
+    document.getElementById('btn-close-layers').addEventListener('click', () => {
+        closePanel('layer-panel');
     });
     
     document.getElementById('btn-close-gnss').addEventListener('click', () => {
