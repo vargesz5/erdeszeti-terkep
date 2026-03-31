@@ -24,49 +24,7 @@ const BOUNDARY_COLORS = {
     region: '#FFEB3B', 
     city: '#00BCD4'
 };
-// Ezt add hozzá a fájl ELEJÉRE (globális változók után, function init() előtt):
-L.WMSImageLayer = L.Layer.extend({
-    options: { layers:'', format:'image/png', transparent:true, opacity:1.0, version:'1.1.1', styles:'' },
-    initialize: function(url, options) { this._url = url; L.setOptions(this, options); this._img = null; this._currentUrl = null; },
-    onAdd: function(map) {
-        this._map = map;
-        this._container = L.DomUtil.create('div', 'leaflet-layer');
-        this._container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200;';
-        map.getPanes().overlayPane.appendChild(this._container);
-        map.on('moveend zoomend resize', this._update, this);
-        this._update();
-    },
-    onRemove: function(map) {
-        map.getPanes().overlayPane.removeChild(this._container);
-        map.off('moveend zoomend resize', this._update, this);
-    },
-    _update: function() {
-        if (!this._map) return;
-        const size = this._map.getSize();
-        const bounds = this._map.getBounds();
-        const sw = L.CRS.EPSG3857.project(bounds.getSouthWest());
-        const ne = L.CRS.EPSG3857.project(bounds.getNorthEast());
-        const url = this._url + new URLSearchParams({
-            SERVICE:'WMS', VERSION:this.options.version, REQUEST:'GetMap',
-            LAYERS:this.options.layers, STYLES:'', FORMAT:this.options.format,
-            TRANSPARENT:'true', WIDTH:size.x, HEIGHT:size.y,
-            SRS:'EPSG:3857', BBOX:`${sw.x},${sw.y},${ne.x},${ne.y}`
-        }).toString();
-        if (url === this._currentUrl) return;
-        this._currentUrl = url;
-        const img = new Image();
-        img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;transition:opacity 0.2s;pointer-events:none;';
-        img.onload = () => {
-            if (this._img && this._img.parentNode) this._img.parentNode.removeChild(this._img);
-            this._img = img;
-            img.style.opacity = this.options.opacity;
-        };
-        img.onerror = () => { if (img.parentNode) img.parentNode.removeChild(img); };
-        this._container.appendChild(img);
-        img.src = url;
-    }
-});
-L.wmsImageLayer = (url, opts) => new L.WMSImageLayer(url, opts);
+
 function init() {
     console.log('Init started');
     initMap();
@@ -94,31 +52,34 @@ function init() {
 
 function loadAllLayers() {
     if (!erdoLayer) {
-        erdoLayer = L.wmsImageLayer(NEBIH_WMS_URL, {
+        erdoLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'KUL_RESZLET_VW',
             format: 'image/png8',
             transparent: true,
-            opacity: 0.7
+            opacity: 0.7,
+            crs: L.CRS.EPSG3857
         });
     }
     erdoLayer.addTo(map);
-
+    
     if (!tagLayer) {
-        tagLayer = L.wmsImageLayer(NEBIH_WMS_URL, {
+        tagLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'KUL_TAG',
             format: 'image/png8',
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            crs: L.CRS.EPSG3857
         });
     }
     tagLayer.addTo(map);
-
+    
     if (!hrszLayer) {
-        hrszLayer = L.wmsImageLayer(NEBIH_WMS_URL, {
+        hrszLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'kul_hrszek',
             format: 'image/png8',
             transparent: true,
-            opacity: 0.5
+            opacity: 0.5,
+            crs: L.CRS.EPSG3857
         });
     }
     hrszLayer.addTo(map);
@@ -139,15 +100,10 @@ function initMap() {
         maxZoom: 19
     });
     
-    satelliteLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-    attribution: '© Google',
-    subdomains: ['0', '1', '2', '3'],
-    maxNativeZoom: 21,
-    maxZoom: 25,
-    tileSize: 256,
-    zoomOffset: 0,
-    detectRetina: false
-});
+    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '© ESRI',
+        maxZoom: 22
+    });
     
     osmLayer.addTo(map);
     
@@ -173,6 +129,9 @@ function updateDisplayCoordsFromCenter() {
 }
 
 function onZoomEnd() {
+    if (map.getZoom() > 22) {
+        map.setZoom(22);
+    }
     if (map.getZoom() < 5) {
         map.setZoom(5);
     }
