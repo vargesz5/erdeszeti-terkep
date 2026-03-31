@@ -2,9 +2,13 @@ let map;
 let osmLayer;
 let satelliteLayer;
 let currentPosition = null;
+let realPosition = null;
 let positionMarker = null;
 let watchId = null;
 let followMode = true;
+let virtualMode = false;
+let virtualPosition = null;
+let currentEditingMarkerId = null;
 
 let countryLayer = null;
 let regionLayer = null;
@@ -105,10 +109,57 @@ function addMarkerToMap(marker) {
             <div style="text-align: center;">
                 <strong>${marker.name}</strong><br>
                 <small>${marker.lat.toFixed(6)}, ${marker.lng.toFixed(6)}</small><br>
+                <button onclick="setVirtualMode(${marker.id})" style="margin-top: 5px; padding: 5px 10px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Ráállok</button><br>
                 <button onclick="deleteMarker(${marker.id})" style="margin-top: 5px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Törlés</button>
             </div>
         `);
 }
+
+function setVirtualMode(markerId) {
+    const marker = savedMarkers.find(m => m.id === markerId);
+    if (!marker) return;
+    
+    virtualMode = true;
+    virtualPosition = { lat: marker.lat, lng: marker.lng };
+    currentEditingMarkerId = markerId;
+    
+    updateVirtualDisplay();
+    
+    document.getElementById('btn-virtual').style.display = 'block';
+    document.getElementById('btn-virtual').classList.add('active');
+    showToast('Virtuális mód bekapcsolva');
+}
+
+function updateVirtualDisplay() {
+    if (!virtualPosition) return;
+    
+    document.getElementById('lat').textContent = virtualPosition.lat.toFixed(7);
+    document.getElementById('lon').textContent = virtualPosition.lng.toFixed(7);
+    document.getElementById('accuracy').textContent = 'Virtuális';
+    
+    if (positionMarker) {
+        positionMarker.setLatLng([virtualPosition.lat, virtualPosition.lng]);
+    }
+    map.panTo([virtualPosition.lat, virtualPosition.lng]);
+}
+
+function returnToRealGPS() {
+    if (!virtualMode) return;
+    
+    virtualMode = false;
+    virtualPosition = null;
+    currentEditingMarkerId = null;
+    
+    document.getElementById('btn-virtual').style.display = 'none';
+    document.getElementById('btn-virtual').classList.remove('active');
+    
+    if (realPosition) {
+        updatePosition(realPosition.lat, realPosition.lon, realPosition.accuracy);
+    }
+    
+    showToast('Vissza a valódi GPS-re');
+}
+window.returnToRealGPS = returnToRealGPS;
 
 async function loadSavedMarkers() {
     if (!dbReady || !markerDB) {
@@ -507,6 +558,10 @@ function initControls() {
         }
     });
     
+    document.getElementById('btn-virtual').addEventListener('click', () => {
+        returnToRealGPS();
+    });
+    
     document.getElementById('btn-close-gnss').addEventListener('click', () => {
         closePanel('gnss-panel');
     });
@@ -793,9 +848,12 @@ function onGeolocationSuccess(position) {
     const lon = position.coords.longitude;
     const accuracy = position.coords.accuracy;
     
+    realPosition = { lat, lon, accuracy };
+    
     document.getElementById('gps-info-text').innerHTML = `
         <div>⏱ ${new Date().toLocaleTimeString('hu-HU')}</div>
         <div>📍 Pontosság: ${accuracy.toFixed(2)} m</div>
+        ${virtualMode ? '<div style="color: #ff9800;">🎯 Virtuális mód</div>' : ''}
     `;
     
     const statusEl = document.getElementById('gnss-status');
@@ -810,7 +868,15 @@ function onGeolocationSuccess(position) {
         statusEl.innerHTML = '<span class="status-icon">●</span><span class="status-text">GPS aktív</span>';
     }
     
-    updatePosition(lat, lon, accuracy);
+    if (virtualMode) {
+        const marker = savedMarkers.find(m => m.id === currentEditingMarkerId);
+        if (marker) {
+            virtualPosition = { lat: marker.lat, lng: marker.lng };
+            updateVirtualDisplay();
+        }
+    } else {
+        updatePosition(lat, lon, accuracy);
+    }
     
     reverseGeocode(lat, lon);
 }
