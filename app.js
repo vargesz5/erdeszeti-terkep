@@ -163,6 +163,16 @@ function exportMarkers() {
         return;
     }
     
+    const choice = confirm('Exportálás CSV formátumban?\n\nOK = CSV\nCancel = JSON');
+    
+    if (choice) {
+        exportCSV();
+    } else {
+        exportJSON();
+    }
+}
+
+function exportJSON() {
     const data = JSON.stringify(savedMarkers, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -175,7 +185,23 @@ function exportMarkers() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showToast(`${savedMarkers.length} pont exportálva!`);
+    showToast(`${savedMarkers.length} pont exportálva (JSON)!`);
+}
+
+function exportCSV() {
+    const csv = 'lat;lon\n' + savedMarkers.map(m => `${m.lat};${m.lng}`).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `erdokutatas-pontok-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast(`${savedMarkers.length} pont exportálva (CSV)!`);
 }
 
 function importMarkers() {
@@ -188,7 +214,13 @@ function importMarkers() {
         
         try {
             const text = await file.text();
-            const markers = JSON.parse(text);
+            let markers = [];
+            
+            if (file.name.endsWith('.csv')) {
+                markers = parseCSV(text);
+            } else {
+                markers = JSON.parse(text);
+            }
             
             if (!Array.isArray(markers)) {
                 showToast('Hibás fájl formátum!');
@@ -197,8 +229,12 @@ function importMarkers() {
             
             let imported = 0;
             for (const m of markers) {
-                if (m.lat && m.lng) {
-                    await addMarker(m.lat, m.lng, m.name || `Pont ${savedMarkers.length + 1}`);
+                const lat = parseFloat(m.lat || m.latitude || m.LAT || m.LATITUDE);
+                const lng = parseFloat(m.lng || m.lon || m.lon || m.LNG || m.LON || m.LONGITUDE);
+                
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const name = m.name || `Pont ${savedMarkers.length + imported + 1}`;
+                    await addMarker(lat, lng, name);
                     imported++;
                 }
             }
@@ -211,6 +247,33 @@ function importMarkers() {
         
         fileInput.value = '';
     };
+}
+
+function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].toLowerCase().split(/[;,]/);
+    const latIdx = headers.findIndex(h => h.includes('lat'));
+    const lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+    
+    if (latIdx === -1 || lonIdx === -1) {
+        showToast('CSV: lat/lon oszlop nem található!');
+        return [];
+    }
+    
+    const markers = [];
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(/[;,]/);
+        const lat = parseFloat(cols[latIdx]);
+        const lng = parseFloat(cols[lonIdx]);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            markers.push({ lat, lng });
+        }
+    }
+    
+    return markers;
 }
 
 async function init() {
