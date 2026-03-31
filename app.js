@@ -38,24 +38,20 @@ function initMarkerDB() {
             return;
         }
         
-        console.log('Opening IndexedDB...');
         const request = indexedDB.open('ErdMarkerDB', 1);
         
         request.onerror = (e) => {
-            console.error('DB open error:', e);
             reject(request.error);
         };
         
         request.onsuccess = () => {
             markerDB = request.result;
             dbReady = true;
-            console.log('IndexedDB ready!');
             resolve(markerDB);
         };
         
         request.onupgradeneeded = (event) => {
             const database = event.target.result;
-            console.log('DB upgrade needed');
             if (!database.objectStoreNames.contains('markers')) {
                 database.createObjectStore('markers', { keyPath: 'id', autoIncrement: true });
             }
@@ -85,7 +81,6 @@ async function addMarker(lat, lng, name) {
             marker.id = request.result;
             savedMarkers.push(marker);
             addMarkerToMap(marker);
-            console.log('Marker saved:', marker);
             resolve(marker);
         };
         request.onerror = () => reject(request.error);
@@ -116,14 +111,9 @@ function addMarkerToMap(marker) {
 }
 
 async function loadSavedMarkers() {
-    console.log('Loading saved markers... dbReady:', dbReady, 'markerDB:', markerDB);
-    
     if (!dbReady || !markerDB) {
-        console.log('DB not ready, initializing...');
         await initMarkerDB();
     }
-    
-    console.log('Getting markers from DB...');
     
     return new Promise((resolve, reject) => {
         try {
@@ -133,16 +123,11 @@ async function loadSavedMarkers() {
             
             request.onsuccess = () => {
                 savedMarkers = request.result || [];
-                console.log('Loaded markers:', savedMarkers.length);
                 savedMarkers.forEach(marker => addMarkerToMap(marker));
                 resolve(savedMarkers);
             };
-            request.onerror = (e) => {
-                console.error('Load error:', e);
-                reject(request.error);
-            };
+            request.onerror = () => reject(request.error);
         } catch (err) {
-            console.error('Try/catch error:', err);
             reject(err);
         }
     });
@@ -229,7 +214,6 @@ function importMarkers() {
 }
 
 async function init() {
-    console.log('App initializing...');
     initMap();
     initControls();
     
@@ -246,11 +230,8 @@ async function init() {
     startGeolocation();
     loadSavedPosition();
     
-    console.log('Calling initMarkerDB...');
     await initMarkerDB();
-    console.log('initMarkerDB done, calling loadSavedMarkers...');
     await loadSavedMarkers();
-    console.log('loadSavedMarkers done');
     
     showToast('Alkalmazás betöltve');
 }
