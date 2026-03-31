@@ -29,15 +29,20 @@ const BOUNDARY_COLORS = {
 };
 
 let markerDB = null;
+let dbReady = false;
 
 function initMarkerDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('EdeszetiMarkerDB', 1);
+        const request = indexedDB.open('ErdMarkerDB', 1);
         
-        request.onerror = () => reject(request.error);
+        request.onerror = (e) => {
+            console.error('DB open error:', e);
+            reject(request.error);
+        };
         
         request.onsuccess = () => {
             markerDB = request.result;
+            dbReady = true;
             resolve(markerDB);
         };
         
@@ -52,8 +57,8 @@ function initMarkerDB() {
 
 function addMarker(lat, lng, name) {
     return new Promise((resolve, reject) => {
-        if (!markerDB) {
-            reject(new Error('DB not ready'));
+        if (!dbReady || !markerDB) {
+            reject(new Error('Adatbázis nincs betöltve, frissítsd az oldalt!'));
             return;
         }
         
@@ -103,8 +108,8 @@ function addMarkerToMap(marker) {
 
 function loadSavedMarkers() {
     return new Promise((resolve, reject) => {
-        if (!markerDB) {
-            reject(new Error('DB not ready'));
+        if (!dbReady || !markerDB) {
+            reject(new Error('Adatbázis nincs betöltve'));
             return;
         }
         
@@ -123,8 +128,8 @@ function loadSavedMarkers() {
 
 function deleteMarker(id) {
     return new Promise((resolve, reject) => {
-        if (!markerDB) {
-            reject(new Error('DB not ready'));
+        if (!dbReady || !markerDB) {
+            reject(new Error('Adatbázis nincs betöltve'));
             return;
         }
         
@@ -221,12 +226,8 @@ async function init() {
     
     document.querySelector('input[name="baselayer"][value="satellite"]').checked = true;
     
-    try {
-        await initMarkerDB();
-        await loadSavedMarkers();
-    } catch (err) {
-        console.warn('Marker DB error:', err);
-    }
+    await initMarkerDB();
+    await loadSavedMarkers();
     
     showToast('Alkalmazás betöltve');
 }
