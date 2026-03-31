@@ -115,19 +115,64 @@ function addMarkerToMap(marker) {
         `);
 }
 
-function setVirtualMode(markerId) {
+async function setVirtualMode(markerId) {
+    if (!realPosition) {
+        showToast('Nincs GPS jel!');
+        return;
+    }
+    
     const marker = savedMarkers.find(m => m.id === markerId);
     if (!marker) return;
     
+    const newLat = realPosition.lat;
+    const newLng = realPosition.lon;
+    
+    await updateMarkerInDB(markerId, newLat, newLng);
+    
+    marker.lat = newLat;
+    marker.lng = newLng;
+    
     virtualMode = true;
-    virtualPosition = { lat: marker.lat, lng: marker.lng };
+    virtualPosition = { lat: newLat, lng: newLng };
     currentEditingMarkerId = markerId;
     
     updateVirtualDisplay();
     
+    refreshMarkerLayer();
+    
     document.getElementById('btn-virtual').style.display = 'block';
     document.getElementById('btn-virtual').classList.add('active');
-    showToast('Virtuális mód bekapcsolva');
+    showToast('Ráállítva erre a pozícióra!');
+}
+
+function updateMarkerInDB(markerId, lat, lng) {
+    return new Promise((resolve, reject) => {
+        const transaction = markerDB.transaction(['markers'], 'readwrite');
+        const store = transaction.objectStore('markers');
+        const request = store.get(markerId);
+        
+        request.onsuccess = () => {
+            const marker = request.result;
+            if (marker) {
+                marker.lat = lat;
+                marker.lng = lng;
+                const updateRequest = store.put(marker);
+                updateRequest.onsuccess = () => resolve();
+                updateRequest.onerror = () => reject(updateRequest.error);
+            } else {
+                resolve();
+            }
+        };
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function refreshMarkerLayer() {
+    if (savedMarkersLayer) {
+        map.removeLayer(savedMarkersLayer);
+        savedMarkersLayer = null;
+    }
+    savedMarkers.forEach(marker => addMarkerToMap(marker));
 }
 
 function updateVirtualDisplay() {
