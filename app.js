@@ -246,25 +246,31 @@ function importMarkers() {
 }
 
 function parseCSV(text) {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 1) return [];
     
-    const headers = lines[0].toLowerCase().split(/[\t;,]/);
-    const latIdx = headers.findIndex(h => h.includes('lat'));
-    const lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
+    const firstLine = lines[0].toLowerCase().split(/[\t;,]/);
+    const hasHeader = firstLine.some(h => h.includes('lat') || h.includes('lon') || h.includes('lng'));
     
-    if (latIdx === -1 || lonIdx === -1) {
-        showToast('CSV: lat/lon oszlop nem található!');
-        return [];
+    let latIdx, lonIdx;
+    
+    if (hasHeader) {
+        latIdx = firstLine.findIndex(h => h.includes('lat'));
+        lonIdx = firstLine.findIndex(h => h.includes('lon') || h.includes('lng'));
+    } else {
+        latIdx = 0;
+        lonIdx = 1;
     }
     
     const markers = [];
-    for (let i = 1; i < lines.length; i++) {
+    const startLine = hasHeader ? 1 : 0;
+    
+    for (let i = startLine; i < lines.length; i++) {
         const cols = lines[i].split(/[\t;,]/);
         const lat = parseEuropeanFloat(cols[latIdx]);
         const lng = parseEuropeanFloat(cols[lonIdx]);
         
-        if (!isNaN(lat) && !isNaN(lng)) {
+        if (!isNaN(lat) && !isNaN(lng) && lat > 0 && lng > 0) {
             markers.push({ lat, lng });
         }
     }
