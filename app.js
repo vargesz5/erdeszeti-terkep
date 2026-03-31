@@ -54,10 +54,12 @@ function loadAllLayers() {
     if (!erdoLayer) {
         erdoLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'KUL_RESZLET_VW',
-            format: 'image/png8',
+            format: 'image/png',
             transparent: true,
             opacity: 0.7,
-            crs: L.CRS.EPSG3857
+            crs: L.CRS.EPSG3857,
+            maxZoom: 25,
+            singleTile: true
         });
     }
     erdoLayer.addTo(map);
@@ -65,10 +67,12 @@ function loadAllLayers() {
     if (!tagLayer) {
         tagLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'KUL_TAG',
-            format: 'image/png8',
+            format: 'image/png',
             transparent: true,
             opacity: 0.8,
-            crs: L.CRS.EPSG3857
+            crs: L.CRS.EPSG3857,
+            maxZoom: 25,
+            singleTile: true
         });
     }
     tagLayer.addTo(map);
@@ -76,10 +80,12 @@ function loadAllLayers() {
     if (!hrszLayer) {
         hrszLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'kul_hrszek',
-            format: 'image/png8',
+            format: 'image/png',
             transparent: true,
             opacity: 0.5,
-            crs: L.CRS.EPSG3857
+            crs: L.CRS.EPSG3857,
+            maxZoom: 25,
+            singleTile: true
         });
     }
     hrszLayer.addTo(map);
@@ -90,7 +96,7 @@ function initMap() {
         center: DEFAULT_LOCATION,
         zoom: 8,
         minZoom: 5,
-        maxZoom: 22,
+        maxZoom: 25,
         zoomControl: true,
         preferCanvas: true
     });
