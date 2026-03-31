@@ -236,6 +236,24 @@ async function init() {
     showToast('Alkalmazás betöltve');
 }
 
+function toggleBasemap() {
+    const btn = document.getElementById('btn-satellite');
+    
+    if (isSatelliteMode) {
+        map.removeLayer(satelliteLayer);
+        osmLayer.addTo(map);
+        isSatelliteMode = false;
+        btn.classList.remove('active');
+        showToast('Egyszerű térkép');
+    } else {
+        map.removeLayer(osmLayer);
+        satelliteLayer.addTo(map);
+        isSatelliteMode = true;
+        btn.classList.add('active');
+        showToast('Műhold kép');
+    }
+}
+
 function loadAllLayers() {
     if (!erdoLayer) {
         erdoLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
@@ -381,6 +399,10 @@ function getBoundaryStyle(type) {
 }
 
 function initControls() {
+    document.getElementById('btn-satellite').addEventListener('click', () => {
+        toggleBasemap();
+    });
+    
     document.getElementById('btn-gnss').addEventListener('click', () => {
         togglePanel('gnss-panel');
     });
