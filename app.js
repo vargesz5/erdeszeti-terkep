@@ -252,6 +252,10 @@ function toggleBasemap() {
         btn.classList.add('active');
         showToast('Műhold kép');
     }
+    
+    if (erdoLayer) erdoLayer.bringToFront();
+    if (tagLayer) tagLayer.bringToFront();
+    if (hrszLayer) hrszLayer.bringToFront();
 }
 
 function loadAllLayers() {
