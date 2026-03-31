@@ -203,9 +203,7 @@ function importMarkers() {
 }
 
 async function init() {
-    console.log('Init started');
     initMap();
-    console.log('Map initialized, zoom:', map.getZoom());
     initLayers();
     initControls();
     
@@ -227,7 +225,6 @@ async function init() {
     try {
         await initMarkerDB();
         await loadSavedMarkers();
-        console.log('Loaded', savedMarkers.length, 'saved markers');
     } catch (err) {
         console.warn('Marker DB error:', err);
     }
@@ -491,7 +488,6 @@ async function loadCountryBoundary() {
             out skel qt;
         `;
         
-        console.log('Loading country boundary...');
         const response = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
         
         if (!response.ok) {
@@ -500,7 +496,6 @@ async function loadCountryBoundary() {
         }
         
         const data = await response.json();
-        console.log('Country data:', data);
         
         if (countryLayer) {
             map.removeLayer(countryLayer);
@@ -508,14 +503,12 @@ async function loadCountryBoundary() {
         }
         
         const geojson = osmiumToGeoJSON(data, 'country');
-        console.log('Country GeoJSON:', geojson);
         
         if (geojson.features.length > 0) {
             countryLayer = L.geoJSON(geojson, {
                 style: getBoundaryStyle('country'),
                 interactive: false
             }).addTo(map);
-            console.log('Country layer added');
         }
     } catch (err) {
         console.warn('Country load error:', err);
@@ -535,7 +528,6 @@ async function loadRegionBoundary() {
             out skel qt;
         `;
         
-        console.log('Loading region boundary...');
         const response = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
         
         if (!response.ok) {
@@ -544,7 +536,6 @@ async function loadRegionBoundary() {
         }
         
         const data = await response.json();
-        console.log('Region data:', data);
         
         if (regionLayer) {
             map.removeLayer(regionLayer);
@@ -552,14 +543,12 @@ async function loadRegionBoundary() {
         }
         
         const geojson = osmiumToGeoJSON(data, 'region');
-        console.log('Region GeoJSON features:', geojson.features.length);
         
         if (geojson.features.length > 0) {
             regionLayer = L.geoJSON(geojson, {
                 style: getBoundaryStyle('region'),
                 interactive: false
             }).addTo(map);
-            console.log('Region layer added');
         }
     } catch (err) {
         console.warn('Region load error:', err);
@@ -579,7 +568,6 @@ async function loadCityBoundary() {
             out skel qt;
         `;
         
-        console.log('Loading city boundary...');
         const response = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query));
         
         if (!response.ok) {
@@ -588,7 +576,6 @@ async function loadCityBoundary() {
         }
         
         const data = await response.json();
-        console.log('City data:', data);
         
         if (cityLayer) {
             map.removeLayer(cityLayer);
@@ -596,14 +583,12 @@ async function loadCityBoundary() {
         }
         
         const geojson = osmiumToGeoJSON(data, 'city');
-        console.log('City GeoJSON features:', geojson.features.length);
         
         if (geojson.features.length > 0) {
             cityLayer = L.geoJSON(geojson, {
                 style: getBoundaryStyle('city'),
                 interactive: false
             }).addTo(map);
-            console.log('City layer added');
         }
     } catch (err) {
         console.warn('City load error:', err);
@@ -614,11 +599,9 @@ function osmiumToGeoJSON(data, type) {
     const features = [];
     
     if (!data.elements) {
-        console.log('No elements in data');
         return { type: 'FeatureCollection', features };
     }
     
-    console.log('Elements count:', data.elements.length);
     
     const nodes = {};
     const ways = {};
@@ -630,7 +613,6 @@ function osmiumToGeoJSON(data, type) {
         else if (el.type === 'relation') relations[el.id] = el;
     });
     
-    console.log('Relations:', Object.keys(relations).length, 'Ways:', Object.keys(ways).length, 'Nodes:', Object.keys(nodes).length);
     
     Object.values(relations).forEach(relation => {
         if (!relation.members || relation.members.length === 0) {
