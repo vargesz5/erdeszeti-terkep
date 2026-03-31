@@ -129,9 +129,6 @@ async function init() {
     
     showToast('Alkalmazás betöltve');
 }
-    
-    showToast('Alkalmazás betöltve');
-}
 
 function loadAllLayers() {
     if (!erdoLayer) {
