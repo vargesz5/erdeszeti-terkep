@@ -20,8 +20,6 @@ let savedMarkersLayer = null;
 
 const NEBIH_WMS_URL = 'https://erdoterkep.nebih.gov.hu/geoserver/nebih/wms?';
 
-let db = null;
-
 const DEFAULT_LOCATION = [47.5, 19.0];
 
 const BOUNDARY_COLORS = {
@@ -30,52 +28,39 @@ const BOUNDARY_COLORS = {
     city: '#00BCD4'
 };
 
-async function initDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('EdeszetiTarkapMarkers', 1);
-        
-        request.onerror = () => reject(request.error);
-        
-        request.onsuccess = () => {
-            db = request.result;
-            resolve(db);
-        };
-        
-        request.onupgradeneeded = (event) => {
-            const database = event.target.result;
-            if (!database.objectStoreNames.contains('markers')) {
-                database.createObjectStore('markers', { keyPath: 'id', autoIncrement: true });
-            }
-        };
-    });
+const STORAGE_KEY = 'erdeszeti_markers';
+
+function loadMarkersFromStorage() {
+    try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+    } catch (e) {
+        console.error('Failed to load markers:', e);
+        return [];
+    }
 }
 
-async function addMarker(lat, lng, name) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
-            return;
-        }
-        
-        const transaction = db.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        
-        const marker = {
-            lat: lat,
-            lng: lng,
-            name: name || `Pont ${savedMarkers.length + 1}`,
-            createdAt: new Date().toISOString()
-        };
-        
-        const request = store.add(marker);
-        request.onsuccess = () => {
-            marker.id = request.result;
-            savedMarkers.push(marker);
-            addMarkerToMap(marker);
-            resolve(marker);
-        };
-        request.onerror = () => reject(request.error);
-    });
+function saveMarkersToStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedMarkers));
+    } catch (e) {
+        console.error('Failed to save markers:', e);
+    }
+}
+
+function addMarker(lat, lng, name) {
+    const marker = {
+        id: Date.now(),
+        lat: lat,
+        lng: lng,
+        name: name || `Pont ${savedMarkers.length + 1}`,
+        createdAt: new Date().toISOString()
+    };
+    
+    savedMarkers.push(marker);
+    saveMarkersToStorage();
+    addMarkerToMap(marker);
+    return marker;
 }
 
 function addMarkerToMap(marker) {
@@ -90,7 +75,7 @@ function addMarkerToMap(marker) {
         html: '<div class="marker-pin"></div>'
     });
     
-    const mapMarker = L.marker([marker.lat, marker.lng], { icon: markerIcon })
+    L.marker([marker.lat, marker.lng], { icon: markerIcon })
         .addTo(savedMarkersLayer)
         .bindPopup(`
             <div style="text-align: center;">
@@ -101,49 +86,21 @@ function addMarkerToMap(marker) {
         `);
 }
 
-async function loadSavedMarkers() {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
-            return;
-        }
-        
-        const transaction = db.transaction(['markers'], 'readonly');
-        const store = transaction.objectStore('markers');
-        const request = store.getAll();
-        
-        request.onsuccess = () => {
-            savedMarkers = request.result || [];
-            savedMarkers.forEach(marker => addMarkerToMap(marker));
-            resolve(savedMarkers);
-        };
-        request.onerror = () => reject(request.error);
-    });
+function loadSavedMarkers() {
+    savedMarkers = loadMarkersFromStorage();
+    savedMarkers.forEach(marker => addMarkerToMap(marker));
 }
 
-window.deleteMarker = async function(id) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject(new Error('Database not initialized'));
-            return;
-        }
-        
-        const transaction = db.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        const request = store.delete(id);
-        
-        request.onsuccess = () => {
-            savedMarkers = savedMarkers.filter(m => m.id !== id);
-            if (savedMarkersLayer) {
-                map.removeLayer(savedMarkersLayer);
-                savedMarkersLayer = null;
-                savedMarkers.forEach(marker => addMarkerToMap(marker));
-            }
-            resolve();
-        };
-        request.onerror = () => reject(request.error);
-    });
+function deleteMarker(id) {
+    savedMarkers = savedMarkers.filter(m => m.id !== id);
+    saveMarkersToStorage();
+    if (savedMarkersLayer) {
+        map.removeLayer(savedMarkersLayer);
+        savedMarkersLayer = null;
+        savedMarkers.forEach(marker => addMarkerToMap(marker));
+    }
 }
+window.deleteMarker = deleteMarker;
 
 async function init() {
     console.log('Init started');
@@ -167,13 +124,11 @@ async function init() {
     
     document.querySelector('input[name="baselayer"][value="satellite"]').checked = true;
     
-    try {
-        await initDB();
-        await loadSavedMarkers();
-        console.log('Loaded', savedMarkers.length, 'saved markers');
-    } catch (err) {
-        console.warn('Failed to load markers:', err);
-    }
+    loadSavedMarkers();
+    console.log('Loaded', savedMarkers.length, 'saved markers');
+    
+    showToast('Alkalmazás betöltve');
+}
     
     showToast('Alkalmazás betöltve');
 }
@@ -380,20 +335,15 @@ function initControls() {
         closePanel('gnss-panel');
     });
     
-    document.getElementById('btn-add-marker').addEventListener('click', async () => {
+    document.getElementById('btn-add-marker').addEventListener('click', () => {
         const lat = currentPosition?.lat || map.getCenter().lat;
         const lng = currentPosition?.lng || map.getCenter().lng;
         
         const name = prompt('Adj nevet a pontnak:', `Pont ${savedMarkers.length + 1}`);
         if (name === null) return;
         
-        try {
-            await addMarker(lat, lng, name || `Pont ${savedMarkers.length + 1}`);
-            showToast('Pont elmentve!');
-        } catch (err) {
-            console.error('Failed to save marker:', err);
-            showToast('Hiba a mentéskor!');
-        }
+        addMarker(lat, lng, name || `Pont ${savedMarkers.length + 1}`);
+        showToast('Pont elmentve!');
     });
 }
 
