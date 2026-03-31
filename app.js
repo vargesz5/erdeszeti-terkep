@@ -116,22 +116,35 @@ function addMarkerToMap(marker) {
 }
 
 async function loadSavedMarkers() {
+    console.log('Loading saved markers... dbReady:', dbReady, 'markerDB:', markerDB);
+    
     if (!dbReady || !markerDB) {
+        console.log('DB not ready, initializing...');
         await initMarkerDB();
     }
     
+    console.log('Getting markers from DB...');
+    
     return new Promise((resolve, reject) => {
-        const transaction = markerDB.transaction(['markers'], 'readonly');
-        const store = transaction.objectStore('markers');
-        const request = store.getAll();
-        
-        request.onsuccess = () => {
-            savedMarkers = request.result || [];
-            console.log('Loaded markers:', savedMarkers.length);
-            savedMarkers.forEach(marker => addMarkerToMap(marker));
-            resolve(savedMarkers);
-        };
-        request.onerror = () => reject(request.error);
+        try {
+            const transaction = markerDB.transaction(['markers'], 'readonly');
+            const store = transaction.objectStore('markers');
+            const request = store.getAll();
+            
+            request.onsuccess = () => {
+                savedMarkers = request.result || [];
+                console.log('Loaded markers:', savedMarkers.length);
+                savedMarkers.forEach(marker => addMarkerToMap(marker));
+                resolve(savedMarkers);
+            };
+            request.onerror = (e) => {
+                console.error('Load error:', e);
+                reject(request.error);
+            };
+        } catch (err) {
+            console.error('Try/catch error:', err);
+            reject(err);
+        }
     });
 }
 
@@ -233,10 +246,11 @@ async function init() {
     startGeolocation();
     loadSavedPosition();
     
-    document.querySelector('input[name="baselayer"][value="satellite"]').checked = true;
-    
+    console.log('Calling initMarkerDB...');
     await initMarkerDB();
+    console.log('initMarkerDB done, calling loadSavedMarkers...');
     await loadSavedMarkers();
+    console.log('loadSavedMarkers done');
     
     showToast('Alkalmazás betöltve');
 }
