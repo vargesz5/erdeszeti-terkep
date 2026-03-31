@@ -883,7 +883,7 @@ function onGeolocationSuccess(position) {
         
         document.getElementById('lat').textContent = displayLat.toFixed(7);
         document.getElementById('lon').textContent = displayLng.toFixed(7);
-        document.getElementById('accuracy').textContent = distance.toFixed(1) + ' m-re';
+        document.getElementById('accuracy').textContent = accuracy.toFixed(2) + ' m';
         
         if (positionMarker) {
             positionMarker.setLatLng([displayLat, displayLng]);
