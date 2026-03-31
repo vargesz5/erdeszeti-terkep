@@ -9,7 +9,7 @@ let followMode = true;
 let virtualMode = false;
 let virtualPosition = null;
 let currentEditingMarkerId = null;
-let gpsOffset = { lat: 0, lng: 0 };
+let initialRealPosition = null;
 
 let countryLayer = null;
 let regionLayer = null;
@@ -120,31 +120,24 @@ function setVirtualMode(markerId) {
     const marker = savedMarkers.find(m => m.id === markerId);
     if (!marker) return;
     
-    if (!realPosition) {
-        showToast('Nincs GPS jel!');
-        return;
-    }
-    
-    gpsOffset = {
-        lat: realPosition.lat - marker.lat,
-        lng: realPosition.lon - marker.lng
-    };
-    
     virtualMode = true;
     virtualPosition = { lat: marker.lat, lng: marker.lng };
     currentEditingMarkerId = markerId;
     
-    const displayLat = marker.lat + gpsOffset.lat;
-    const displayLng = marker.lng + gpsOffset.lng;
+    if (realPosition) {
+        initialRealPosition = { lat: realPosition.lat, lng: realPosition.lon };
+    } else {
+        initialRealPosition = null;
+    }
     
-    document.getElementById('lat').textContent = displayLat.toFixed(7);
-    document.getElementById('lon').textContent = displayLng.toFixed(7);
+    document.getElementById('lat').textContent = marker.lat.toFixed(7);
+    document.getElementById('lon').textContent = marker.lng.toFixed(7);
     document.getElementById('accuracy').textContent = 'Virtuális';
     
     if (positionMarker) {
-        positionMarker.setLatLng([displayLat, displayLng]);
+        positionMarker.setLatLng([marker.lat, marker.lng]);
     }
-    map.panTo([displayLat, displayLng]);
+    map.panTo([marker.lat, marker.lng]);
     
     document.getElementById('btn-virtual').style.display = 'block';
     document.getElementById('btn-virtual').classList.add('active');
@@ -157,7 +150,7 @@ function returnToRealGPS() {
     virtualMode = false;
     virtualPosition = null;
     currentEditingMarkerId = null;
-    gpsOffset = { lat: 0, lng: 0 };
+    initialRealPosition = null;
     
     document.getElementById('btn-virtual').style.display = 'none';
     document.getElementById('btn-virtual').classList.remove('active');
@@ -880,8 +873,13 @@ function onGeolocationSuccess(position) {
     if (virtualMode && virtualPosition) {
         const distance = calculateDistance(virtualPosition.lat, virtualPosition.lng, lat, lon);
         
-        const displayLat = virtualPosition.lat + gpsOffset.lat;
-        const displayLng = virtualPosition.lng + gpsOffset.lng;
+        let displayLat = lat;
+        let displayLng = lon;
+        
+        if (initialRealPosition) {
+            displayLat = virtualPosition.lat + (lat - initialRealPosition.lat);
+            displayLng = virtualPosition.lng + (lon - initialRealPosition.lng);
+        }
         
         document.getElementById('lat').textContent = displayLat.toFixed(7);
         document.getElementById('lon').textContent = displayLng.toFixed(7);
