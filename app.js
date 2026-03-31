@@ -336,8 +336,9 @@ function initControls() {
     });
     
     document.getElementById('btn-add-marker').addEventListener('click', () => {
-        const lat = currentPosition?.lat || map.getCenter().lat;
-        const lng = currentPosition?.lng || map.getCenter().lng;
+        const center = map.getCenter();
+        const lat = center.lat;
+        const lng = center.lng;
         
         const name = prompt('Adj nevet a pontnak:', `Pont ${savedMarkers.length + 1}`);
         if (name === null) return;
