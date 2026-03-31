@@ -376,10 +376,6 @@ function getBoundaryStyle(type) {
 }
 
 function initControls() {
-    document.getElementById('btn-layers').addEventListener('click', () => {
-        togglePanel('layer-panel');
-    });
-    
     document.getElementById('btn-gnss').addEventListener('click', () => {
         togglePanel('gnss-panel');
     });
@@ -407,10 +403,6 @@ function initControls() {
             }
             showToast('Követés kikapcsolva - szabadon navigálhatsz');
         }
-    });
-    
-    document.getElementById('btn-close-layers').addEventListener('click', () => {
-        closePanel('layer-panel');
     });
     
     document.getElementById('btn-close-gnss').addEventListener('click', () => {
