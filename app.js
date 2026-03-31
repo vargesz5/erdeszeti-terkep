@@ -25,122 +25,6 @@ const BOUNDARY_COLORS = {
     city: '#00BCD4'
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Egyedi WMS Image Layer – pontosan úgy működik mint a NEBIH saját térképe:
-// Minden térkép mozgásnál/zoomnál friss képet kér a szervertől a JELENLEGI
-// bounding box + képméret alapján. Nincs tile cache, nincs zoom korlát.
-// ─────────────────────────────────────────────────────────────────────────────
-L.WMSImageLayer = L.Layer.extend({
-    options: {
-        layers: '',
-        format: 'image/png',
-        transparent: true,
-        opacity: 1.0,
-        version: '1.1.1',
-        styles: ''
-    },
-
-    initialize: function(url, options) {
-        this._url = url;
-        L.setOptions(this, options);
-        this._img = null;
-        this._currentUrl = null;
-    },
-
-    onAdd: function(map) {
-        this._map = map;
-        this._container = L.DomUtil.create('div', 'leaflet-layer leaflet-wms-image-layer');
-        this._container.style.position = 'absolute';
-        this._container.style.top = '0';
-        this._container.style.left = '0';
-        this._container.style.width = '100%';
-        this._container.style.height = '100%';
-        this._container.style.pointerEvents = 'none';
-        this._container.style.zIndex = '200';
-
-        map.getPanes().overlayPane.appendChild(this._container);
-
-        map.on('moveend zoomend resize', this._update, this);
-        this._update();
-    },
-
-    onRemove: function(map) {
-        map.getPanes().overlayPane.removeChild(this._container);
-        map.off('moveend zoomend resize', this._update, this);
-    },
-
-    setOpacity: function(opacity) {
-        this.options.opacity = opacity;
-        if (this._img) this._img.style.opacity = opacity;
-        return this;
-    },
-
-    _update: function() {
-        if (!this._map) return;
-
-        const map = this._map;
-        const size = map.getSize();
-        const bounds = map.getBounds();
-
-        // EPSG:3857 bounds számítása (amit a NEBIH GeoServer is vár)
-        const sw = L.CRS.EPSG3857.project(bounds.getSouthWest());
-        const ne = L.CRS.EPSG3857.project(bounds.getNorthEast());
-        const bbox = `${sw.x},${sw.y},${ne.x},${ne.y}`;
-
-        const params = new URLSearchParams({
-            SERVICE: 'WMS',
-            VERSION: this.options.version,
-            REQUEST: 'GetMap',
-            LAYERS: this.options.layers,
-            STYLES: this.options.styles,
-            FORMAT: this.options.format,
-            TRANSPARENT: this.options.transparent ? 'true' : 'false',
-            WIDTH: size.x,
-            HEIGHT: size.y,
-            SRS: 'EPSG:3857',
-            BBOX: bbox
-        });
-
-        const url = this._url + params.toString();
-
-        // Csak akkor tölt be új képet ha az URL változott
-        if (url === this._currentUrl) return;
-        this._currentUrl = url;
-
-        const img = new Image();
-        img.style.position = 'absolute';
-        img.style.top = '0';
-        img.style.left = '0';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.opacity = '0';
-        img.style.transition = 'opacity 0.2s ease';
-        img.style.pointerEvents = 'none';
-
-        img.onload = () => {
-            // Régi kép eltávolítása
-            if (this._img && this._img.parentNode) {
-                this._img.parentNode.removeChild(this._img);
-            }
-            this._img = img;
-            img.style.opacity = this.options.opacity;
-        };
-
-        img.onerror = () => {
-            console.warn('WMS kép betöltési hiba:', this.options.layers);
-        };
-
-        this._container.appendChild(img);
-        img.src = url;
-    }
-});
-
-L.wmsImageLayer = function(url, options) {
-    return new L.WMSImageLayer(url, options);
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 function init() {
     console.log('Init started');
     initMap();
@@ -167,33 +51,35 @@ function init() {
 }
 
 function loadAllLayers() {
-    // Egyedi WMS Image Layer – nincs zoom korlát, mindig friss kép
     if (!erdoLayer) {
-        erdoLayer = L.wmsImageLayer(NEBIH_WMS_URL, {
+        erdoLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'KUL_RESZLET_VW',
             format: 'image/png8',
             transparent: true,
-            opacity: 0.7
+            opacity: 0.7,
+            crs: L.CRS.EPSG3857
         });
     }
     erdoLayer.addTo(map);
     
     if (!tagLayer) {
-        tagLayer = L.wmsImageLayer(NEBIH_WMS_URL, {
+        tagLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'KUL_TAG',
             format: 'image/png8',
             transparent: true,
-            opacity: 0.8
+            opacity: 0.8,
+            crs: L.CRS.EPSG3857
         });
     }
     tagLayer.addTo(map);
     
     if (!hrszLayer) {
-        hrszLayer = L.wmsImageLayer(NEBIH_WMS_URL, {
+        hrszLayer = L.tileLayer.wms(NEBIH_WMS_URL, {
             layers: 'kul_hrszek',
             format: 'image/png8',
             transparent: true,
-            opacity: 0.5
+            opacity: 0.5,
+            crs: L.CRS.EPSG3857
         });
     }
     hrszLayer.addTo(map);
@@ -204,24 +90,22 @@ function initMap() {
         center: DEFAULT_LOCATION,
         zoom: 8,
         minZoom: 5,
-        maxZoom: 28,        // ← nincs korlát, WMS bírja
+        maxZoom: 22,
         zoomControl: true,
         preferCanvas: true
     });
     
-    // OSM alap – tile cache csak 19-ig van, felette CSS overzoom
     osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
-        maxNativeZoom: 19,
-        maxZoom: 28
+        maxZoom: 19
     });
     
-    // ESRI műhold – tile cache 22-ig, felette CSS overzoom (pixeles de használható)
-    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '© ESRI',
-        maxNativeZoom: 22,
-        maxZoom: 28
-    });
+    satelliteLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    attribution: '© Google',
+    subdomains: ['0', '1', '2', '3'],
+    maxNativeZoom: 22,
+    maxZoom: 25
+});
     
     osmLayer.addTo(map);
     
