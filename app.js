@@ -183,7 +183,7 @@ function exportJSON() {
 }
 
 function exportCSV() {
-    const csv = 'lat;lon\n' + savedMarkers.map(m => `${m.lat};${m.lng}`).join('\n');
+    const csv = 'lat\tlon\n' + savedMarkers.map(m => `${m.lat}\t${m.lng}`).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
@@ -247,7 +247,7 @@ function parseCSV(text) {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
     
-    const headers = lines[0].toLowerCase().split(/[;,]/);
+    const headers = lines[0].toLowerCase().split(/[\t;,]/);
     const latIdx = headers.findIndex(h => h.includes('lat'));
     const lonIdx = headers.findIndex(h => h.includes('lon') || h.includes('lng'));
     
@@ -258,9 +258,9 @@ function parseCSV(text) {
     
     const markers = [];
     for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(/[;,]/);
-        const lat = parseFloat(cols[latIdx]);
-        const lng = parseFloat(cols[lonIdx]);
+        const cols = lines[i].split(/[\t;,]/);
+        const lat = parseEuropeanFloat(cols[latIdx]);
+        const lng = parseEuropeanFloat(cols[lonIdx]);
         
         if (!isNaN(lat) && !isNaN(lng)) {
             markers.push({ lat, lng });
@@ -268,6 +268,12 @@ function parseCSV(text) {
     }
     
     return markers;
+}
+
+function parseEuropeanFloat(str) {
+    if (!str) return NaN;
+    str = str.trim().replace(',', '.');
+    return parseFloat(str);
 }
 
 async function init() {
