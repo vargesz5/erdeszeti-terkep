@@ -204,7 +204,6 @@ function importMarkers() {
 
 async function init() {
     initMap();
-    initLayers();
     initControls();
     
     satelliteLayer.addTo(map);
@@ -374,22 +373,6 @@ function getBoundaryStyle(type) {
         fillColor: color,
         smoothFactor: 1
     };
-}
-
-function initLayers() {
-    document.querySelectorAll('input[name="baselayer"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.value === 'osm') {
-                map.removeLayer(satelliteLayer);
-                osmLayer.addTo(map);
-                isSatelliteMode = false;
-            } else {
-                map.removeLayer(osmLayer);
-                satelliteLayer.addTo(map);
-                isSatelliteMode = true;
-            }
-        });
-    });
 }
 
 function initControls() {
