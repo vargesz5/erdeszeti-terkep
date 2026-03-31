@@ -70,8 +70,8 @@ function addMarkerToMap(marker) {
     
     const markerIcon = L.divIcon({
         className: 'saved-marker',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+        iconSize: [24, 36],
+        iconAnchor: [12, 36],
         html: '<div class="marker-pin"></div>'
     });
     
