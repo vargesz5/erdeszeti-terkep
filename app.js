@@ -167,6 +167,41 @@ function exportMarkers() {
     showToast(`${savedMarkers.length} pont exportálva!`);
 }
 
+function importMarkers() {
+    const fileInput = document.getElementById('import-file');
+    fileInput.click();
+    
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const markers = JSON.parse(text);
+            
+            if (!Array.isArray(markers)) {
+                showToast('Hibás fájl formátum!');
+                return;
+            }
+            
+            let imported = 0;
+            for (const m of markers) {
+                if (m.lat && m.lng) {
+                    await addMarker(m.lat, m.lng, m.name || `Pont ${savedMarkers.length + 1}`);
+                    imported++;
+                }
+            }
+            
+            showToast(`${imported} pont importálva!`);
+        } catch (err) {
+            console.error('Import error:', err);
+            showToast('Hiba az importáláskor!');
+        }
+        
+        fileInput.value = '';
+    };
+}
+
 async function init() {
     console.log('Init started');
     initMap();
@@ -421,6 +456,10 @@ function initControls() {
     
     document.getElementById('btn-export').addEventListener('click', () => {
         exportMarkers();
+    });
+    
+    document.getElementById('btn-import').addEventListener('click', () => {
+        importMarkers();
     });
 }
 
