@@ -55,13 +55,13 @@ function initMarkerDB() {
     });
 }
 
-function addMarker(lat, lng, name) {
+async function addMarker(lat, lng, name) {
+    if (!dbReady || !markerDB) {
+        showToast('Várj, betöltés folyamatban...');
+        await initMarkerDB();
+    }
+    
     return new Promise((resolve, reject) => {
-        if (!dbReady || !markerDB) {
-            reject(new Error('Adatbázis nincs betöltve, frissítsd az oldalt!'));
-            return;
-        }
-        
         const transaction = markerDB.transaction(['markers'], 'readwrite');
         const store = transaction.objectStore('markers');
         
@@ -106,13 +106,12 @@ function addMarkerToMap(marker) {
         `);
 }
 
-function loadSavedMarkers() {
+async function loadSavedMarkers() {
+    if (!dbReady || !markerDB) {
+        await initMarkerDB();
+    }
+    
     return new Promise((resolve, reject) => {
-        if (!dbReady || !markerDB) {
-            reject(new Error('Adatbázis nincs betöltve'));
-            return;
-        }
-        
         const transaction = markerDB.transaction(['markers'], 'readonly');
         const store = transaction.objectStore('markers');
         const request = store.getAll();
@@ -126,13 +125,12 @@ function loadSavedMarkers() {
     });
 }
 
-function deleteMarker(id) {
+async function deleteMarker(id) {
+    if (!dbReady || !markerDB) {
+        await initMarkerDB();
+    }
+    
     return new Promise((resolve, reject) => {
-        if (!dbReady || !markerDB) {
-            reject(new Error('Adatbázis nincs betöltve'));
-            return;
-        }
-        
         const transaction = markerDB.transaction(['markers'], 'readwrite');
         const store = transaction.objectStore('markers');
         const request = store.delete(id);
