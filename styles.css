@@ -202,6 +202,38 @@ html, body {
     background: #666;
 }
 
+.export-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.export-btn:hover {
+    background: #45a049;
+}
+
+.export-btn.cancel {
+    background: #666;
+}
+
+.export-btn.cancel:hover {
+    background: #555;
+}
+
+#export-panel .panel-close {
+    top: 10px;
+    right: 10px;
+}
+
 .radio-option {
     display: flex;
     align-items: center;

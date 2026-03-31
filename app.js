@@ -163,13 +163,7 @@ function exportMarkers() {
         return;
     }
     
-    const choice = confirm('Exportálás CSV formátumban?\n\nOK = CSV\nCancel = JSON');
-    
-    if (choice) {
-        exportCSV();
-    } else {
-        exportJSON();
-    }
+    togglePanel('export-panel');
 }
 
 function exportJSON() {
@@ -526,6 +520,24 @@ function initControls() {
     
     document.getElementById('btn-import').addEventListener('click', () => {
         importMarkers();
+    });
+    
+    document.getElementById('btn-export-json').addEventListener('click', () => {
+        closePanel('export-panel');
+        exportJSON();
+    });
+    
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+        closePanel('export-panel');
+        exportCSV();
+    });
+    
+    document.getElementById('btn-close-export').addEventListener('click', () => {
+        closePanel('export-panel');
+    });
+    
+    document.getElementById('btn-close-export-x').addEventListener('click', () => {
+        closePanel('export-panel');
     });
 }
 
