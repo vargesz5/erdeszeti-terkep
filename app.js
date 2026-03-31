@@ -183,7 +183,9 @@ function exportJSON() {
 }
 
 function exportCSV() {
-    const csv = 'lat\tlon\n' + savedMarkers.map(m => `${m.lat}\t${m.lng}`).join('\n');
+    const header = 'lat\tlon';
+    const rows = savedMarkers.map(m => `${m.lat.toFixed(7)}\t${m.lng.toFixed(7)}`);
+    const csv = [header, ...rows].join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
