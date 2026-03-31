@@ -115,77 +115,26 @@ function addMarkerToMap(marker) {
         `);
 }
 
-async function setVirtualMode(markerId) {
-    if (!realPosition) {
-        showToast('Nincs GPS jel!');
-        return;
-    }
-    
+function setVirtualMode(markerId) {
     const marker = savedMarkers.find(m => m.id === markerId);
     if (!marker) return;
     
-    const newLat = realPosition.lat;
-    const newLng = realPosition.lon;
-    
-    await updateMarkerInDB(markerId, newLat, newLng);
-    
-    marker.lat = newLat;
-    marker.lng = newLng;
-    
     virtualMode = true;
-    virtualPosition = { lat: newLat, lng: newLng };
+    virtualPosition = { lat: marker.lat, lng: marker.lng };
     currentEditingMarkerId = markerId;
     
-    updateVirtualDisplay();
-    
-    refreshMarkerLayer();
-    
-    document.getElementById('btn-virtual').style.display = 'block';
-    document.getElementById('btn-virtual').classList.add('active');
-    showToast('Ráállítva erre a pozícióra!');
-}
-
-function updateMarkerInDB(markerId, lat, lng) {
-    return new Promise((resolve, reject) => {
-        const transaction = markerDB.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        const request = store.get(markerId);
-        
-        request.onsuccess = () => {
-            const marker = request.result;
-            if (marker) {
-                marker.lat = lat;
-                marker.lng = lng;
-                const updateRequest = store.put(marker);
-                updateRequest.onsuccess = () => resolve();
-                updateRequest.onerror = () => reject(updateRequest.error);
-            } else {
-                resolve();
-            }
-        };
-        request.onerror = () => reject(request.error);
-    });
-}
-
-function refreshMarkerLayer() {
-    if (savedMarkersLayer) {
-        map.removeLayer(savedMarkersLayer);
-        savedMarkersLayer = null;
-    }
-    savedMarkers.forEach(marker => addMarkerToMap(marker));
-}
-
-function updateVirtualDisplay() {
-    if (!virtualPosition) return;
-    
-    document.getElementById('lat').textContent = virtualPosition.lat.toFixed(7);
-    document.getElementById('lon').textContent = virtualPosition.lng.toFixed(7);
+    document.getElementById('lat').textContent = marker.lat.toFixed(7);
+    document.getElementById('lon').textContent = marker.lng.toFixed(7);
     document.getElementById('accuracy').textContent = 'Virtuális';
     
     if (positionMarker) {
-        positionMarker.setLatLng([virtualPosition.lat, virtualPosition.lng]);
+        positionMarker.setLatLng([marker.lat, marker.lng]);
     }
-    map.panTo([virtualPosition.lat, virtualPosition.lng]);
+    map.panTo([marker.lat, marker.lng]);
+    
+    document.getElementById('btn-virtual').style.display = 'block';
+    document.getElementById('btn-virtual').classList.add('active');
+    showToast('Odaálltál a markerre!');
 }
 
 function returnToRealGPS() {
