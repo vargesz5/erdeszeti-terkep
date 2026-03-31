@@ -381,7 +381,6 @@ html, body {
     width: 40px;
     height: 40px;
     position: relative;
-    animation: pulse 2s infinite;
 }
 
 .gnss-marker .line-top,
