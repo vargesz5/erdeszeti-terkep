@@ -106,9 +106,9 @@ function initMap() {
         maxZoom: 19
     });
     
-    satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '© ESRI',
-        maxZoom: 22
+    satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        attribution: '© Google',
+        maxZoom: 25
     });
     
     osmLayer.addTo(map);
