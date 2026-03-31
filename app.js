@@ -869,7 +869,8 @@ function onGeolocationSuccess(position) {
         document.getElementById('accuracy').textContent = distance.toFixed(1) + ' m-re';
         
         if (positionMarker) {
-            positionMarker.setLatLng([virtualPosition.lat, virtualPosition.lng]);
+            positionMarker.setLatLng([lat, lon]);
+            map.panTo([lat, lon]);
         }
     } else {
         updatePosition(lat, lon, accuracy);
