@@ -96,7 +96,7 @@ function initMap() {
         center: DEFAULT_LOCATION,
         zoom: 8,
         minZoom: 5,
-        maxZoom: 24,
+        maxZoom: 22,
         zoomControl: true,
         preferCanvas: true
     });
@@ -108,7 +108,7 @@ function initMap() {
     
     satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         attribution: '© Google',
-        maxZoom: 24
+        maxZoom: 22
     });
     
     osmLayer.addTo(map);
