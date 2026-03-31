@@ -868,11 +868,14 @@ function onGeolocationSuccess(position) {
         statusEl.innerHTML = '<span class="status-icon">●</span><span class="status-text">GPS aktív</span>';
     }
     
-    if (virtualMode) {
-        const marker = savedMarkers.find(m => m.id === currentEditingMarkerId);
-        if (marker) {
-            virtualPosition = { lat: marker.lat, lng: marker.lng };
-            updateVirtualDisplay();
+    if (virtualMode && virtualPosition) {
+        const distance = calculateDistance(virtualPosition.lat, virtualPosition.lng, lat, lon);
+        document.getElementById('lat').textContent = lat.toFixed(7);
+        document.getElementById('lon').textContent = lon.toFixed(7);
+        document.getElementById('accuracy').textContent = distance.toFixed(1) + ' m-re';
+        
+        if (positionMarker) {
+            positionMarker.setLatLng([virtualPosition.lat, virtualPosition.lng]);
         }
     } else {
         updatePosition(lat, lon, accuracy);
@@ -976,6 +979,17 @@ function loadSavedPosition() {
             }
         } catch (e) {}
     }
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
 }
 
 function showToast(message) {
