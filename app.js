@@ -125,8 +125,8 @@ function addMarkerToMap(marker) {
             <div style="text-align: center;">
                 <strong>${marker.name}</strong><br>
                 <small>${marker.lat.toFixed(6)}, ${marker.lng.toFixed(6)}</small><br>
-                <button onclick="setVirtualMode(${marker.id})" style="margin-top: 5px; padding: 5px 10px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Ráállok</button><br>
-                <button onclick="deleteMarker(${marker.id})" style="margin-top: 5px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Törlés</button>
+                <button onclick="setVirtualMode('${marker.id}')" style="margin-top: 5px; padding: 5px 10px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">Ráállok</button><br>
+                <button onclick="deleteMarker('${marker.id}')" style="margin-top: 5px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">Törlés</button>
             </div>
         `);
 }
@@ -158,6 +158,7 @@ function setVirtualMode(markerId) {
     document.getElementById('btn-virtual').classList.add('active');
     showToast('Odaálltál a markerre!');
 }
+window.setVirtualMode = setVirtualMode;
 
 function returnToRealGPS() {
     if (!virtualMode) return;
