@@ -89,16 +89,23 @@ async function loadSavedMarkers() {
 }
 
 async function deleteMarker(id) {
-    if (!dbReady) {
-        await initMarkerDB();
+    try {
+        if (!dbReady) {
+            await initMarkerDB();
+        }
+        
+        const { doc, deleteDoc } = window.firebaseFirestore;
+        await deleteDoc(doc(window.firebaseDb, 'markers', id));
+        
+        savedMarkers = savedMarkers.filter(m => m.id !== id);
+        refreshMarkerLayer();
+        showToast('Pont törölve!');
+    } catch (err) {
+        console.error('Delete error:', err);
+        showToast('Hiba a törléskor!');
     }
-    
-    const { doc, deleteDoc } = window.firebaseFirestore;
-    await deleteDoc(doc(window.firebaseDb, 'markers', id));
-    
-    savedMarkers = savedMarkers.filter(m => m.id !== id);
-    refreshMarkerLayer();
 }
+window.deleteMarker = deleteMarker;
 
 function addMarkerToMap(marker) {
     if (!savedMarkersLayer) {
