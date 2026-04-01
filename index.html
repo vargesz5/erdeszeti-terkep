@@ -105,6 +105,25 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js?v=10"></script>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+      import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAMgAZsKNSLuSLdozxDVLozqNJyP-CLyFA",
+        authDomain: "erdeszeteti-terkep-db.firebaseapp.com",
+        projectId: "erdeszeteti-terkep-db",
+        storageBucket: "erdeszeteti-terkep-db.firebasestorage.app",
+        messagingSenderId: "119280746228",
+        appId: "1:119280746228:web:f114c5d1b12f08ceeda8a1"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      window.firebaseDb = db;
+      window.firebaseFirestore = { collection, getDocs, addDoc, deleteDoc, doc, onSnapshot, query, orderBy };
+      window.firebaseReady = true;
+    </script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>

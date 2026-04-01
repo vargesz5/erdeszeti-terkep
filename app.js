@@ -33,63 +33,71 @@ const BOUNDARY_COLORS = {
     city: '#00BCD4'
 };
 
-let markerDB = null;
 let dbReady = false;
 
-function initMarkerDB() {
-    return new Promise((resolve, reject) => {
-        if (dbReady && markerDB) {
-            resolve(markerDB);
-            return;
-        }
-        
-        const request = indexedDB.open('ErdMarkerDB', 1);
-        
-        request.onerror = (e) => {
-            reject(request.error);
-        };
-        
-        request.onsuccess = () => {
-            markerDB = request.result;
-            dbReady = true;
-            resolve(markerDB);
-        };
-        
-        request.onupgradeneeded = (event) => {
-            const database = event.target.result;
-            if (!database.objectStoreNames.contains('markers')) {
-                database.createObjectStore('markers', { keyPath: 'id', autoIncrement: true });
-            }
-        };
-    });
+async function initMarkerDB() {
+    if (dbReady) return;
+    
+    if (!window.firebaseReady) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    dbReady = true;
 }
 
 async function addMarker(lat, lng, name) {
-    if (!dbReady || !markerDB) {
+    if (!dbReady) {
         showToast('Várj, betöltés folyamatban...');
         await initMarkerDB();
     }
     
-    return new Promise((resolve, reject) => {
-        const transaction = markerDB.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        
-        const marker = {
-            lat: lat,
-            lng: lng,
-            name: name || `Pont ${savedMarkers.length + 1}`,
-            createdAt: new Date().toISOString()
-        };
-        
-        const request = store.add(marker);
-        request.onsuccess = () => {
-            marker.id = request.result;
-            savedMarkers.push(marker);
-            addMarkerToMap(marker);
-            resolve(marker);
-        };
-        request.onerror = () => reject(request.error);
+    const { collection, addDoc } = window.firebaseFirestore;
+    const markersRef = collection(window.firebaseDb, 'markers');
+    
+    const marker = {
+        lat: lat,
+        lng: lng,
+        name: name || `Pont ${savedMarkers.length + 1}`,
+        createdAt: new Date().toISOString()
+    };
+    
+    const docRef = await addDoc(markersRef, marker);
+    marker.id = docRef.id;
+    
+    savedMarkers.push(marker);
+    addMarkerToMap(marker);
+    return marker;
+}
+
+async function loadSavedMarkers() {
+    if (!dbReady) {
+        await initMarkerDB();
+    }
+    
+    const { collection, getDocs, query, orderBy } = window.firebaseFirestore;
+    const markersRef = collection(window.firebaseDb, 'markers');
+    const q = query(markersRef, orderBy('createdAt'));
+    
+    const snapshot = await getDocs(q);
+    savedMarkers = [];
+    
+    snapshot.forEach(doc => {
+        const marker = { id: doc.id, ...doc.data() };
+        savedMarkers.push(marker);
+        addMarkerToMap(marker);
     });
+}
+
+async function deleteMarker(id) {
+    if (!dbReady) {
+        await initMarkerDB();
+    }
+    
+    const { doc, deleteDoc } = window.firebaseFirestore;
+    await deleteDoc(doc(window.firebaseDb, 'markers', id));
+    
+    savedMarkers = savedMarkers.filter(m => m.id !== id);
+    refreshMarkerLayer();
 }
 
 function addMarkerToMap(marker) {
@@ -162,52 +170,6 @@ function returnToRealGPS() {
     showToast('Vissza a valódi GPS-re');
 }
 window.returnToRealGPS = returnToRealGPS;
-
-async function loadSavedMarkers() {
-    if (!dbReady || !markerDB) {
-        await initMarkerDB();
-    }
-    
-    return new Promise((resolve, reject) => {
-        try {
-            const transaction = markerDB.transaction(['markers'], 'readonly');
-            const store = transaction.objectStore('markers');
-            const request = store.getAll();
-            
-            request.onsuccess = () => {
-                savedMarkers = request.result || [];
-                savedMarkers.forEach(marker => addMarkerToMap(marker));
-                resolve(savedMarkers);
-            };
-            request.onerror = () => reject(request.error);
-        } catch (err) {
-            reject(err);
-        }
-    });
-}
-
-async function deleteMarker(id) {
-    if (!dbReady || !markerDB) {
-        await initMarkerDB();
-    }
-    
-    return new Promise((resolve, reject) => {
-        const transaction = markerDB.transaction(['markers'], 'readwrite');
-        const store = transaction.objectStore('markers');
-        const request = store.delete(id);
-        
-        request.onsuccess = () => {
-            savedMarkers = savedMarkers.filter(m => m.id !== id);
-            if (savedMarkersLayer) {
-                map.removeLayer(savedMarkersLayer);
-                savedMarkersLayer = null;
-                savedMarkers.forEach(marker => addMarkerToMap(marker));
-            }
-            resolve();
-        };
-        request.onerror = () => reject(request.error);
-    });
-}
 window.deleteMarker = deleteMarker;
 
 function exportMarkers() {
