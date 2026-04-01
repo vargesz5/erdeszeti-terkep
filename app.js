@@ -107,6 +107,14 @@ async function deleteMarker(id) {
 }
 window.deleteMarker = deleteMarker;
 
+function refreshMarkerLayer() {
+    if (savedMarkersLayer) {
+        map.removeLayer(savedMarkersLayer);
+        savedMarkersLayer = null;
+    }
+    savedMarkers.forEach(marker => addMarkerToMap(marker));
+}
+
 function addMarkerToMap(marker) {
     if (!savedMarkersLayer) {
         savedMarkersLayer = L.layerGroup().addTo(map);
